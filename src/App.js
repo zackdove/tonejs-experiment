@@ -36,7 +36,8 @@ function App() {
     Tone.getContext()
       .resume()
       .then(() => {
-        const clickLPFilter = new Tone.Filter(1000, "lowpass").toDestination();
+        const clickLPFilter = new Tone.Filter(1000, "lowpass");
+        const clickPanner = new Tone.Panner(0).toDestination();
         const clickSynth = new Tone.Synth({
           oscillator: {
             type: "sine",
@@ -49,18 +50,157 @@ function App() {
             release: 0.1,
           },
         }).connect(clickLPFilter);
+        clickLPFilter.connect(clickPanner);
 
         const clickLoop = new Tone.Loop((time) => {
           console.log(clickLPFilter.frequency.get());
           clickLPFilter.set({
-            frequency: Math.random() * 4000 + 5000,
+            frequency: Math.random() * 12000 + 5000,
           });
-
+          clickPanner.set({
+            pan: Math.random() * 2 - 1,
+          });
           clickSynth.triggerAttackRelease("5000", "0.0001", time);
         }, "32n").start(0);
 
+        const beep = new Tone.Synth({
+          oscillator: {
+            type: "sine",
+          },
+        }).toDestination();
+        const beepFreq = 10000;
+        const beepPattern = [
+          "10000",
+          "10000",
+          "10000",
+          null,
+          "10000",
+          "10000",
+          null,
+          null,
+          "10000",
+          "10000",
+          "10000",
+          null,
+          null,
+          "10000",
+          "10000",
+          null,
+        ];
+        beepPattern.push(...beepPattern);
+        console.log(beepPattern.length);
+        const beepSeq = new Tone.Sequence(
+          (time, note) => {
+            beep.triggerAttackRelease(note, 0.0001, time);
+          },
+          beepPattern,
+          "32n"
+        ).start(0);
+
+        const bassNotes = ["49", "98", "196"];
+        const bassPattern = [
+          bassNotes,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          bassNotes,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+        ];
+
+        const bassLPFilter = new Tone.Filter(50, "lowpass");
+        const bassHPFilter = new Tone.Filter(20, "highpass");
+        const bassDistortion = new Tone.Distortion(0.4);
+        const bassSynth = new Tone.PolySynth().connect(bassLPFilter);
+        bassSynth.set({
+          envelope: {
+            release: 0.9,
+          },
+        });
+        bassLPFilter.connect(bassHPFilter);
+        bassHPFilter.connect(bassDistortion);
+        bassDistortion.toDestination();
+        const bassSeq = new Tone.Sequence(
+          (time, note) => {
+            bassSynth.triggerAttackRelease(note, "3n", time);
+          },
+          bassPattern,
+          "16n"
+        ).start(0);
+
+        const ringPattern = [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          "1174",
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+        ];
+        const ringSynth = new Tone.Synth();
+        const ringReverb = new Tone.FeedbackDelay("8n", 0.35);
+        ringSynth.connect(ringReverb);
+        ringReverb.toDestination();
+        const ringSeq = new Tone.Sequence(
+          (time, note) => {
+            ringSynth.triggerAttackRelease(note, "8n", time);
+          },
+          ringPattern,
+          "16n"
+        ).start(0);
+
         console.log("Audio Play");
-        Tone.Transport.bpm.value = 80;
+        Tone.Transport.bpm.value = 88;
         Tone.Transport.start();
       });
   }
